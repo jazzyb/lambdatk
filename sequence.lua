@@ -14,13 +14,13 @@ Sequence = {}
   end
 
 -- Define table.pack() if using old Lua
-if _VERSION == 'Lua 5.1' then
-  function table.pack (...)
+local pack = table.pack
+if not pack then
+  pack = function (...)
     local arg = {...}
     arg.n = select('#', ...)
     return arg
   end
-  table.unpack = unpack
 end
 
 -- Sequence.new can take arguments in two ways:
@@ -32,9 +32,9 @@ end
 -- as argument (the index).  This function will be called 'count' times and
 -- will return the next item for the sequence.
 function Sequence.new (...)
-  args = table.pack(...)
+  local args = pack(...)
   if args.n == 2 and type(args[1]) == 'number' and type(args[2]) == 'function' then
-    ret, count, f = {}, args[1], args[2]
+    local ret, count, f = {}, args[1], args[2]
     for i = 1, count do
       ret[i] = f(i)
     end
@@ -69,7 +69,8 @@ end
 -- The second manner of calling the function is the same as the first except
 -- the first item in 'self' will be treated as the first accumulator variable.
 function Sequence.reduce (self, ...)
-  args = table.pack(...)
+  local args = pack(...)
+  local start, acc, f
   if args.n == 1 and type(args[1]) == 'function' then
     start, acc, f = 2, self[1], args[1]
   elseif args.n == 2 and type(args[2]) == 'function' then
@@ -85,8 +86,8 @@ end
 -- Returns a new Sequence limited to the items in 'self' for which 'f' returns
 -- true
 function Sequence.filter (self, f)
-  ret = {}
-  count = 0
+  local ret = {}
+  local count = 0
   for i = 1, Sequence.size(self) do
     if f(self[i], i) then
       ret[count + 1] = self[i]
@@ -132,7 +133,7 @@ end
 
 -- Returns 'seq' concatenated to the end of 'self'
 function Sequence.concat (self, seq)
-  ret = Sequence.copy(self)
+  local ret = Sequence.copy(self)
   for i = 1, Sequence.size(seq) do
     ret[ret.n + 1] = seq[i]
     ret.n = ret.n + 1
@@ -142,7 +143,7 @@ end
 
 -- Returns 'self' reversed
 function Sequence.reverse (self)
-  size = Sequence.size(self)
+  local size = Sequence.size(self)
   return Sequence.new(size, function (i)
     return self[size - i + 1]
   end)
